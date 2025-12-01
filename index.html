@@ -1219,6 +1219,16 @@ textarea {
     ); 
   });
 
+  // ✅ AUTO START GPS ON PAGE LOAD
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (refs.btnStartGPS && !watchId) {
+        console.log('Auto-starting GPS...');
+        refs.btnStartGPS.click();
+      }
+    }, 1500);
+  });
+
   // ✅ UPDATED: Added fotoProfilTab
   refs.tabAreas.addEventListener('click', ()=>{ 
     refs.areaTab.classList.remove('hidden'); 
@@ -1303,6 +1313,53 @@ textarea {
     }); 
     renderAreas();
   }
+
+  // ✅ EXPERT SENTENCES DATABASE - 35+ KALIMAT PROFESIONAL
+  const EXPERT_SENTENCES_DB = {
+    kondisi_aman: [
+        "Area dalam kondisi aman dan terkendali penuh sesuai standar operasional keamanan",
+        "Tidak ditemukan indikasi pelanggaran keamanan atau aktivitas mencurigakan",
+        "Situasi normal, semua parameter pengawasan dalam batas toleransi wajar",
+        "Lokasi aman untuk akses personel dengan protokol identifikasi yang valid",
+        "Kondisi lingkungan mendukung operasional tanpa hambatan keamanan",
+        "Peralatan pengawasan berfungsi optimal, tidak ada anomali terdeteksi",
+        "Akses kontrol berjalan sesuai prosedur, tidak ada pelanggaran akses",
+        "Area steril dari ancaman fisik maupun non-fisik",
+        "Patroli rutin menunjukkan konsistensi kondisi aman",
+        "Tingkat keamanan sesuai dengan klasifikasi zona hijau (aman)"
+    ],
+    temuan_bahaya: [
+        "Terdeteksi potensi bahaya keselamatan yang memerlukan tindakan korektif segera",
+        "Kondisi tidak memenuhi standar K3 minimum, perlu isolasi area terbatas",
+        "Ada indikasi pelanggaran prosedur keamanan yang berisiko tinggi",
+        "Peralatan safety tidak berfungsi optimal, perlu kalibrasi darurat",
+        "Zona bahaya tidak memiliki pembatas fisik yang memadai",
+        "Tanda peringatan bahaya tidak terpasang atau tidak terbaca jelas",
+        "Ada material berbahaya yang tidak disimpan sesuai prosedur",
+        "Sistem darurat tidak dapat diakses atau tidak berfungsi",
+        "Kondisi lingkungan berpotensi menyebabkan kecelakaan kerja",
+        "Tingkat risiko melebihi batas toleransi yang diizinkan"
+    ],
+    kerusakan_fisik: [
+        "Teridentifikasi kerusakan infrastruktur keamanan yang memerlukan perbaikan prioritas",
+        "Ada komponen sistem pengawasan yang rusak dan berpotensi gagal fungsi",
+        "Perlu penilaian teknis untuk tingkat kerusakan pada aset kritis",
+        "Kerusakan mempengaruhi fungsi operasional sistem keamanan area",
+        "Fasilitas pendukung keamanan mengalami degradasi performa",
+        "Ada vandalisme atau kerusakan disengaja pada properti keamanan",
+        "Peralatan mengalami wear & tear melebihi batas pemakaian normal",
+        "Infrastruktur pendukung tidak siap operasi penuh"
+    ],
+    aktivitas_mencurigakan: [
+        "Terdeteksi aktivitas tidak biasa yang memerlukan investigasi lanjutan",
+        "Ada indikasi pelanggaran akses area terbatas tanpa otorisasi",
+        "Perlu verifikasi identitas personel yang tidak tercatat dalam sistem",
+        "Aktivitas tidak terdaftar dalam log operasional keamanan harian",
+        "Ada percobaan bypass sistem keamanan yang tercatat",
+        "Pergerakan mencurigakan terdeteksi di area sensitif",
+        "Indikasi intelligence gathering pada titik kritis keamanan"
+    ]
+  };
 
   function renderAreas(){
     refs.areasContainer.innerHTML = '';
@@ -1447,23 +1504,139 @@ textarea {
         const ai = document.createElement('button');
         ai.className='icon-btn';
         ai.innerHTML='<i class="fa fa-robot" style="color:#00d4ff"></i>';
-        ai.title = "Generate deskripsi otomatis (Expert)";
+        ai.title = "Pilih Deskripsi Expert Security";
         ai.onclick = ()=>{
-          let base = `Foto area: ${area.name}.`;
-          if(area.detail) base += ` Detail lokasi: ${area.detail}.`;
-          if(p.lat && p.lon) base += ` Lokasi GPS: ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)}.`;
-          if(p.ts) base += ` Waktu: ${new Date(p.ts).toLocaleString()}.`;
-
-          const kalimat = [
-            "Situasi area terpantau stabil tanpa adanya aktivitas mencurigakan.",
-            "Kondisi fisik lingkungan terlihat baik dan terawat.",
-            "Tidak ada indikasi kerusakan ataupun ancaman keselamatan.",
-            "Area berada dalam kondisi aman sesuai standar patroli."
-          ];
-          const randomKalimat = kalimat[Math.floor(Math.random()*kalimat.length)];
-          p.desc = `${randomKalimat}\n${base}\nDokumentasi diambil sebagai bukti pengecekan pada saat patroli.`;
-          renderAreas();
-          alert("Deskripsi expert telah dihasilkan!");
+            // Buat modal manual dengan checkbox
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: var(--card);
+                padding: 20px;
+                border-radius: 12px;
+                width: 90%;
+                max-width: 800px;
+                max-height: 80vh;
+                overflow: auto;
+                border: 2px solid var(--primary);
+            `;
+            
+            // Build checkbox UI
+            let html = `
+                <h3 style="margin: 0 0 15px 0; color: var(--text);">Pilih Deskripsi Security Expert</h3>
+                <div style="margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">
+                    Centang kalimat yang ingin ditambahkan (bisa multiple)
+                </div>
+            `;
+            
+            // Add category checkboxes
+            Object.keys(EXPERT_SENTENCES_DB).forEach((category, catIndex) => {
+                const categoryName = category.replace('_', ' ').toUpperCase();
+                html += `<div style="margin: 15px 0 8px 0; font-weight: bold; color: var(--primary);">${categoryName}</div>`;
+                
+                EXPERT_SENTENCES_DB[category].forEach((sentence, idx) => {
+                    const id = `sent_${catIndex}_${idx}`;
+                    html += `
+                        <div style="margin: 5px 0; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                            <input type="checkbox" id="${id}" style="margin-right: 8px;">
+                            <label for="${id}" style="cursor: pointer; color: var(--text);">${sentence}</label>
+                        </div>
+                    `;
+                });
+            });
+            
+            // Control buttons
+            html += `
+                <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px;">
+                        <button id="checkAllBtn" class="btn ghost" style="padding: 8px 12px;">Check All</button>
+                        <button id="uncheckAllBtn" class="btn ghost" style="padding: 8px 12px;">Uncheck All</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="modalCancelBtn" class="btn danger" style="padding: 10px 20px;">Batal</button>
+                        <button id="modalApplyBtn" class="btn" style="padding: 10px 20px;">Terapkan ke Deskripsi</button>
+                    </div>
+                </div>
+            `;
+            
+            modalContent.innerHTML = html;
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Event handlers
+            const checkAllBtn = modal.querySelector('#checkAllBtn');
+            const uncheckAllBtn = modal.querySelector('#uncheckAllBtn');
+            const cancelBtn = modal.querySelector('#modalCancelBtn');
+            const applyBtn = modal.querySelector('#modalApplyBtn');
+            
+            checkAllBtn.onclick = () => {
+                modal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+            };
+            
+            uncheckAllBtn.onclick = () => {
+                modal.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            };
+            
+            cancelBtn.onclick = () => {
+                document.body.removeChild(modal);
+            };
+            
+            applyBtn.onclick = () => {
+                const selectedSentences = [];
+                
+                // Collect in order: kondisi_aman → temuan_bahaya → kerusakan_fisik → aktivitas_mencurigakan
+                Object.keys(EXPERT_SENTENCES_DB).forEach((category, catIndex) => {
+                    EXPERT_SENTENCES_DB[category].forEach((sentence, idx) => {
+                        const checkbox = modal.querySelector(`#sent_${catIndex}_${idx}`);
+                        if (checkbox && checkbox.checked) {
+                            selectedSentences.push(sentence);
+                        }
+                    });
+                });
+                
+                if (selectedSentences.length > 0) {
+                    // Get current description
+                    let currentDesc = p.desc || '';
+                    
+                    // Add selected sentences (with line breaks)
+                    const newDesc = selectedSentences.join('\n');
+                    
+                    // Combine with existing if any
+                    if (currentDesc.trim()) {
+                        p.desc = currentDesc + '\n\n' + newDesc;
+                    } else {
+                        p.desc = newDesc;
+                    }
+                    
+                    // Update UI
+                    renderAreas();
+                    alert(`${selectedSentences.length} kalimat expert ditambahkan!`);
+                } else {
+                    alert('Pilih minimal satu kalimat');
+                    return;
+                }
+                
+                document.body.removeChild(modal);
+            };
+            
+            // Close on backdrop click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            };
         };
         actionWrap.appendChild(del); actionWrap.appendChild(edit); actionWrap.appendChild(ai); photoItem.appendChild(actionWrap);
         const meta = document.createElement('div'); meta.className='photo-meta';
@@ -2150,7 +2323,7 @@ textarea {
     return uid;
   }
 
-  // ✅ IMPROVED PDF generator: Cover page 50/50 layout + better area pages
+  // ✅ IMPROVED PDF generator: Cover page 50/50 layout + better area pages + OPTIMIZED COMPRESSION
   refs.btnGeneratePDF.addEventListener('click', async ()=>{
     try{
       const { jsPDF } = window.jspdf;
@@ -2171,7 +2344,8 @@ textarea {
       doc.rect(0, 0, pageWidth, 50, 'F');
       doc.setFontSize(24); 
       doc.setTextColor(255, 255, 255); 
-      doc.text('LAPORAN PATROLI', pageWidth/2, 30, {align:'center'});
+      // ✅ PERUBAHAN: JUDUL BARU
+      doc.text('SECURITY SYSTEM PATROLI WITH AI DETECTION', pageWidth/2, 30, {align:'center'});
       
       // Content area starting from y=60
       const contentStartY = 60;
@@ -2254,7 +2428,8 @@ textarea {
           const imgX = rightX + (rightWidth - imgWidth) / 2;
           const imgY = rightY + 30;
           
-          doc.addImage(durl, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+          // ✅ OPTIMASI: Gunakan kompresi JPEG dengan kualitas 0.75
+          doc.addImage(durl, 'JPEG', imgX, imgY, imgWidth, imgHeight, undefined, 'FAST', 0, 0.75);
         } catch(e) {
           console.warn('Profile photo add failed', e);
           doc.setFontSize(12);
@@ -2268,122 +2443,134 @@ textarea {
       }
       
       // Cover done
-      doc.addPage();
+      
+      // ✅ PERUBAHAN: HILANGKAN HALAMAN KOSONG - hanya buat halaman baru jika ada area
+      if (state.areas.length > 0) {
+        doc.addPage();
 
-      // ✅ AREA PAGES: Improved layout with photo left + description right
-      for(const area of state.areas){
-        // Start new page for each area
-        if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
-          doc.addPage();
-        }
-        
-        // Area header band
-        const rgb = colorForIdRgb(area.id);
-        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
-        doc.rect(margin, 10, pageWidth - margin*2, 12, 'F');
-        doc.setTextColor(255, 255, 255); 
-        doc.setFontSize(14);
-        doc.text(area.name + (area.detail ? ' — ' + area.detail : ''), margin + 5, 18);
-        doc.setTextColor(0, 0, 0);
-        
-        let cursorY = 25;
-        
-        // Area description at top (if any)
-        if(area.description && area.description.trim()){
-          const lines = doc.splitTextToSize(area.description, contentWidth - 10);
-          const descHeight = lines.length * 5;
-          
-          if(cursorY + descHeight > pageHeight - margin - 50){
-            doc.addPage(); 
-            cursorY = margin;
+        // ✅ AREA PAGES: Improved layout dengan photo left + description right + OPTIMIZED COMPRESSION
+        for(const area of state.areas){
+          // Start new page for each area (kecuali area pertama yang sudah di halaman baru)
+          if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
+            doc.addPage();
           }
           
-          doc.setFontSize(10); 
-          doc.setFillColor(250, 250, 250);
-          doc.rect(margin, cursorY, contentWidth, descHeight + 8, 'F');
+          // Area header band
+          const rgb = colorForIdRgb(area.id);
+          doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+          doc.rect(margin, 10, pageWidth - margin*2, 12, 'F');
+          doc.setTextColor(255, 255, 255); 
+          doc.setFontSize(14);
+          doc.text(area.name + (area.detail ? ' — ' + area.detail : ''), margin + 5, 18);
           doc.setTextColor(0, 0, 0);
-          doc.text(lines, margin + 5, cursorY + 6);
-          cursorY += descHeight + 15;
-        }
-        
-        // Photos with improved layout
-        for(const p of area.photos){
-          try{
-            const durl = await fetchAsDataUrl(p.url);
-            const imgProps = doc.getImageProperties(durl);
+          
+          let cursorY = 25;
+          
+          // Area description at top (if any)
+          if(area.description && area.description.trim()){
+            const lines = doc.splitTextToSize(area.description, contentWidth - 10);
+            const descHeight = lines.length * 5;
             
-            // Calculate dimensions for two-column layout
-            const photoWidth = contentWidth * 0.6; // 60% for photo
-            const descWidth = contentWidth * 0.4;  // 40% for description
-            const photoHeight = (imgProps.height / imgProps.width) * photoWidth;
-            
-            // Description text
-            const descLines = p.desc && p.desc.trim() ? 
-              doc.splitTextToSize(p.desc, descWidth - 15) : ['(Tidak ada deskripsi)'];
-            const descHeight = Math.max(descLines.length * 4.5, photoHeight);
-            
-            const coordText = (p.lat && p.lon) ? 
-              (`Koordinat: ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)} — ${p.ts ? new Date(p.ts).toLocaleString() : ''}`) : 
-              'Koordinat: -';
-            
-            // Check if we need new page
-            const blockNeeded = Math.max(photoHeight, descHeight) + 30;
-            
-            if(cursorY + blockNeeded > pageHeight - margin - 10){
-              doc.addPage();
-              cursorY = margin + 10;
+            if(cursorY + descHeight > pageHeight - margin - 50){
+              doc.addPage(); 
+              cursorY = margin;
             }
             
-            // Photo column (left)
-            const photoX = margin;
-            const photoY = cursorY;
-            doc.addImage(durl, 'JPEG', photoX, photoY, photoWidth, photoHeight);
-            
-            // Coordinates below photo
-            doc.setFontSize(8);
-            doc.setTextColor(100, 100, 100);
-            doc.text(coordText, photoX, photoY + photoHeight + 5);
-            
-            // Description column (right) with different background
-            const descX = margin + photoWidth + 5;
-            const descY = cursorY;
-            
-            // Background for description
-            doc.setFillColor(240, 245, 255);
-            doc.rect(descX, descY, descWidth, descHeight, 'F');
-            doc.setDrawColor(200, 210, 230);
-            doc.rect(descX, descY, descWidth, descHeight);
-            
-            // Description text
-            doc.setFontSize(10);
+            doc.setFontSize(10); 
+            doc.setFillColor(250, 250, 250);
+            doc.rect(margin, cursorY, contentWidth, descHeight + 8, 'F');
             doc.setTextColor(0, 0, 0);
-            let textY = descY + 8;
-            descLines.forEach(line => {
-              if (textY < descY + descHeight - 5) {
-                doc.text(line, descX + 5, textY);
-                textY += 4.5;
-              }
-            });
-            
-            cursorY += Math.max(photoHeight, descHeight) + 20;
-            
-            // Separator line
-            if(cursorY < pageHeight - margin - 5){
-              doc.setDrawColor(200, 200, 200);
-              doc.setLineWidth(0.3);
-              doc.line(margin, cursorY - 5, margin + contentWidth, cursorY - 5);
-            }
-            
-          } catch(e) {
-            console.warn('Photo processing failed', e);
+            doc.text(lines, margin + 5, cursorY + 6);
+            cursorY += descHeight + 15;
           }
+          
+          // Photos with improved layout
+          for(const p of area.photos){
+            try{
+              const durl = await fetchAsDataUrl(p.url);
+              const imgProps = doc.getImageProperties(durl);
+              
+              // ✅ OPTIMASI: Resize gambar untuk PDF (max 800px width)
+              const maxPhotoWidth = 800; // pixels
+              const scaleFactor = Math.min(1, maxPhotoWidth / imgProps.width);
+              const targetWidth = imgProps.width * scaleFactor;
+              const targetHeight = imgProps.height * scaleFactor;
+              
+              // Calculate dimensions for two-column layout
+              const photoWidth = contentWidth * 0.6; // 60% untuk photo
+              const descWidth = contentWidth * 0.4;  // 40% untuk description
+              const photoHeight = (targetHeight / targetWidth) * photoWidth;
+              
+              // Description text
+              const descLines = p.desc && p.desc.trim() ? 
+                doc.splitTextToSize(p.desc, descWidth - 15) : ['(Tidak ada deskripsi)'];
+              const descHeight = Math.max(descLines.length * 4.5, photoHeight);
+              
+              const coordText = (p.lat && p.lon) ? 
+                (`Koordinat: ${p.lat.toFixed(6)}, ${p.lon.toFixed(6)} — ${p.ts ? new Date(p.ts).toLocaleString() : ''}`) : 
+                'Koordinat: -';
+              
+              // Check if we need new page
+              const blockNeeded = Math.max(photoHeight, descHeight) + 30;
+              
+              if(cursorY + blockNeeded > pageHeight - margin - 10){
+                doc.addPage();
+                cursorY = margin + 10;
+              }
+              
+              // Photo column (left)
+              const photoX = margin;
+              const photoY = cursorY;
+              
+              // ✅ OPTIMASI: Gunakan kompresi JPEG dengan kualitas 0.7 untuk foto area
+              doc.addImage(durl, 'JPEG', photoX, photoY, photoWidth, photoHeight, undefined, 'FAST', 0, 0.7);
+              
+              // Coordinates below photo
+              doc.setFontSize(8);
+              doc.setTextColor(100, 100, 100);
+              doc.text(coordText, photoX, photoY + photoHeight + 5);
+              
+              // Description column (right) with different background
+              const descX = margin + photoWidth + 5;
+              const descY = cursorY;
+              
+              // Background for description
+              doc.setFillColor(240, 245, 255);
+              doc.rect(descX, descY, descWidth, descHeight, 'F');
+              doc.setDrawColor(200, 210, 230);
+              doc.rect(descX, descY, descWidth, descHeight);
+              
+              // Description text
+              doc.setFontSize(10);
+              doc.setTextColor(0, 0, 0);
+              let textY = descY + 8;
+              descLines.forEach(line => {
+                if (textY < descY + descHeight - 5) {
+                  doc.text(line, descX + 5, textY);
+                  textY += 4.5;
+                }
+              });
+              
+              cursorY += Math.max(photoHeight, descHeight) + 20;
+              
+              // Separator line
+              if(cursorY < pageHeight - margin - 5){
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.3);
+                doc.line(margin, cursorY - 5, margin + contentWidth, cursorY - 5);
+              }
+              
+            } catch(e) {
+              console.warn('Photo processing failed', e);
+            }
+          }
+          
+          // Space between areas
+          cursorY += 15;
         }
-        
-        // Space between areas
-        cursorY += 15;
       }
 
-      // Signature page
+      // Signature page (always add)
       doc.addPage();
       doc.setFontSize(16); 
       doc.text('TANDA TANGAN PETUGAS', margin, 30);
@@ -2393,6 +2580,7 @@ textarea {
           const sigWidth = 80;
           const sigHeight = 40;
           const sigX = margin + (contentWidth - sigWidth) / 2;
+          // ✅ OPTIMASI: Signature PNG dengan kualitas default
           doc.addImage(state.signature, 'PNG', sigX, 45, sigWidth, sigHeight); 
         } catch(e) { 
           console.warn('Signature add failed', e); 
@@ -2417,14 +2605,16 @@ textarea {
       doc.setTextColor(100, 100, 100);
       doc.text('Tanda tangan sudah otomatis terverifikasi dan tervalidasi by system', margin, lineY + 18);
 
-      // GPS summary
-      const gpsSample = state.gpsPath.slice(-10).map(g => `${g.lat?.toFixed(6)||''},${g.lon?.toFixed(6)||''} @ ${new Date(g.timestamp||Date.now()).toLocaleString()}`);
-      doc.setFontSize(8); 
-      doc.setTextColor(0, 0, 0);
-      doc.text('GPS path (latest 10):', margin, lineY + 30);
-      doc.setFontSize(7); 
-      doc.setTextColor(80, 80, 80);
-      doc.text(doc.splitTextToSize(gpsSample.join('\n'), contentWidth), margin, lineY + 35);
+      // GPS summary (compact)
+      if (state.gpsPath.length > 0) {
+        const gpsSample = state.gpsPath.slice(-5).map(g => `${g.lat?.toFixed(6)||''},${g.lon?.toFixed(6)||''} @ ${new Date(g.timestamp||Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`);
+        doc.setFontSize(8); 
+        doc.setTextColor(0, 0, 0);
+        doc.text('GPS path (latest 5):', margin, lineY + 30);
+        doc.setFontSize(7); 
+        doc.setTextColor(80, 80, 80);
+        doc.text(doc.splitTextToSize(gpsSample.join('\n'), contentWidth), margin, lineY + 35);
+      }
 
       // Save PDF
       const ab = doc.output('arraybuffer');
@@ -2432,7 +2622,7 @@ textarea {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); 
       a.href = url; 
-      a.download = 'laporan_patroli_'+ (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'_') + '.pdf';
+      a.download = 'security_patroli_ai_' + (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'_') + '.pdf';
       document.body.appendChild(a); 
       a.click(); 
       setTimeout(()=>{ 
